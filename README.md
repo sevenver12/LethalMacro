@@ -1,1 +1,2 @@
 # LethalMacro
+Ricsi egy segg

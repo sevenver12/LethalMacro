@@ -1,18 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using SharpHook.Native;
+﻿using SharpHook.Native;
 using Spectre.Console;
 
 namespace LethalMacro
 {
     public static class PromtsAndStuff
     {
-        public static bool Config()
+        public static bool PromptConfig()
         {
             return AnsiConsole.Prompt(
                                 new TextPrompt<bool>("[yellow]C to configure[/], [red]X to exit[/]")
@@ -22,7 +15,7 @@ namespace LethalMacro
                                     .WithConverter(choice => choice ? "c" : "n"));
         }
 
-        public static MacroBind ConfigChoices(List<MacroBind> binds)
+        public static MacroBind PromptConfigChoices(List<MacroBind> binds)
         {
             var selector = new SelectionPrompt<MacroBind>()
                     .Title("Select the Keybind that you want to modify?")
@@ -33,13 +26,13 @@ namespace LethalMacro
                         {
                             return "[green]Add new macro...[/]";
                         }
-                        return $"{string.Join(" + ", [.. macro.Modifier.Split(), macro.KeyCode])}: {macro.Value}";
+                        return $"{string.Join(" + ", [.. macro.Modifier.Split(), macro.KeyCode.ToString().Substring(2)])}: {macro.Value}";
                     })
                     .AddChoices([.. binds, MacroBind.Empty]);
             return AnsiConsole.Prompt(selector);
         }
 
-        public static ModifyOperation ModifyMacro(MacroBind chosenMacro)
+        public static ModifyOperation PromptModifyMacro(MacroBind chosenMacro)
         {
             var selector = new SelectionPrompt<ModifyOperation>()
                    .Title("Select the Keybind that you want to modify?")

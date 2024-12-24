@@ -2,7 +2,7 @@ using LethalMacro;
 using Microsoft.EntityFrameworkCore;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddTransient<IKeyLogExecuter, KeyLogExecuter>();
+builder.Services.AddSingleton<IKeyLogExecuter, KeyLogExecuter>();
 builder.Services.AddHostedService<Worker>();
 
 builder.Services.AddDbContext<MacroDbContext>(c =>

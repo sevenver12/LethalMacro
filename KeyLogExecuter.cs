@@ -1,17 +1,22 @@
 ﻿using SharpHook;
 using SharpHook.Native;
+using SharpHook.Providers;
 namespace LethalMacro
 {
-    public class KeyLogExecuter : IKeyLogExecuter
+    public class KeyLogExecuter : IKeyLogExecuter, IDisposable
     {
         private Dictionary<(ModifierMask, KeyCode), string>? _keybinds;
-        private TaskPoolGlobalHook? _hook;
+        private readonly TaskPoolGlobalHook _hook;
 
+        public KeyLogExecuter()
+        {
+            _hook = new TaskPoolGlobalHook(1, GlobalHookType.Keyboard);
+            _hook.RunAsync();
+        }
         public async Task<MacroBind> CreateNewKeybindAsync()
         {
             var tSource = new TaskCompletionSource<MacroBind>();
-            var hook = new TaskPoolGlobalHook(1, GlobalHookType.Keyboard);
-            hook.KeyTyped += (_, e) =>
+            void valueFunc(object? _, KeyboardHookEventArgs e)
             {
                 tSource.SetResult(new MacroBind
                 {
@@ -19,27 +24,25 @@ namespace LethalMacro
                     Modifier = e.RawEvent.Mask,
                     Value = string.Empty,
                 });
-            };
-            var hookRunner = hook.RunAsync();
-            //var result = await hook.EventAsync<KeyboardHookEventArgs>(()=> hook.RunAsync(),nameof(hook.KeyTyped));
-            //hook.Dispose();
+                e.SuppressEvent = true;
+            }
+
+            _hook.KeyTyped += valueFunc;
             var result = await tSource.Task;
-            
-            //hook.Dispose();
-            //await hookRunner;
+            _hook.KeyTyped -= valueFunc;
             return result;
         }
 
-        public async Task WaitForKeyAsync(IEnumerable<MacroBind> binds, CancellationToken cancellationToken)
+        public void StartRecording(IEnumerable<MacroBind> binds)
         {
             _keybinds = binds.ToDictionary(k => (k.Modifier, k.KeyCode), v => v.Value);
-            _hook = new TaskPoolGlobalHook(1, GlobalHookType.Keyboard);
-            cancellationToken.Register(Stop);
             _hook.KeyTyped += HandleKeyTyped;
-            await _hook.RunAsync();
         }
 
-        public void Stop() => _hook?.Dispose();
+        public void StopRecording()
+        {
+            _hook.KeyTyped -= HandleKeyTyped;
+        }
 
         private void HandleKeyTyped(object? sender, KeyboardHookEventArgs e)
         {
@@ -66,6 +69,13 @@ namespace LethalMacro
                     sm.SimulateKeyPress(KeyCode.VcLeftShift);
                 e.SuppressEvent = true;
             }
+        }
+
+        public void Dispose()
+        {
+            _hook.Dispose();
+            UioHookProvider.Instance.Stop();
+            GC.SuppressFinalize(this);
         }
     }
 }
